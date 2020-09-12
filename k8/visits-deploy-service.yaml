@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-petclinic-visits-service
+  labels:
+    app: petclinic-visits-service
+
+spec:
+  template:
+    metadata:
+      name: pod-petclinic-visits-service
+      labels:
+        app: petclinic-microservice
+        service: visits-service
+    spec:
+      containers:
+        - name: visits-service
+          image: ${javaapp_docker_image_prefix}/spring-petclinic-visits-service
+          command: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+          ports:
+            - containerPort: 8082
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-microservice
+      service: visits-service
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: visits-service
+spec:
+  #type: NodePort
+  ports:
+    - name: "8082"
+      targetPort: 8082
+      port: 8082
+      #nodePort: 30761
+  selector:
+    app: petclinic-microservice
+    service: visits-service

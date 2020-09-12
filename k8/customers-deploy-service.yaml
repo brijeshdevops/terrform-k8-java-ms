@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-petclinic-customers
+  labels:
+    app: petclinic-customers-service
+
+spec:
+  template:
+    metadata:
+      name: pod-petclinic-customers-service
+      labels:
+        app: petclinic-microservice
+        service: customers-service
+    spec:
+      containers:
+        - name: customers-service
+          image: ${javaapp_docker_image_prefix}/spring-petclinic-customers-service
+          command: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+          #command: ["java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+          ports:
+            - containerPort: 8081
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-microservice
+      service: customers-service
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: customers-service
+spec:
+  #type: NodePort
+  ports:
+    - name: "8081"
+      targetPort: 8081
+      port: 8081
+      #nodePort: 30761
+  selector:
+    app: petclinic-microservice
+    service: customers-service

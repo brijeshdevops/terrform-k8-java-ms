@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-petclinic-discovery-server
+  labels:
+    app: petclinic-discovery-server
+
+spec:
+  template:
+    metadata:
+      name: pod-petclinic-discovery-server
+      labels:
+        app: petclinic-microservice
+        service: discovery-server
+    spec:
+      containers:
+        - name: petclinic-discovery-server
+          image: ${javaapp_docker_image_prefix}/spring-petclinic-discovery-server
+          command: ["./dockerize","-wait=tcp://config-server:8888","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+          ports:
+            - containerPort: 8761
+
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-microservice
+      service: discovery-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-server
+spec:
+  #type: NodePort
+  type: ClusterIP
+  ports:
+    - name: "8761"
+      targetPort: 8761 # Container/Pod port
+      port: 8761
+      #nodePort: 30761
+  selector:
+    app: petclinic-microservice
+    service: discovery-server

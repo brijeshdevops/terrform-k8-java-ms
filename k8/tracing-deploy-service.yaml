@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-petclinic-tracing-server
+  labels:
+    app: petclinic-tracing-server
+
+spec:
+  template:
+    metadata:
+      name: pod-petclinic-tracing-server
+      labels:
+        app: petclinic-microservice
+        service: tracing-server
+    spec:
+      containers:
+        - name: tracing-server
+          image: openzipkin/zipkin
+          ports:
+            - containerPort: 9411
+          env:
+            - name: "JAVA_OPTS"
+              value: "-XX:+UnlockExperimentalVMOptions"
+            - name: "-Djava.security.egd"
+              value: "file:/dev/./urandom"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-microservice
+      service: tracing-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracing-server
+spec:
+  #type: NodePort
+  ports:
+    - name: "9411"
+      targetPort: 9411
+      port: 9411
+      #nodePort: 30761
+  selector:
+    app: petclinic-microservice
+    service: tracing-server

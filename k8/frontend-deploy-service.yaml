@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-petclinic-frontend
+  labels:
+    app: petclinic-frontend
+
+spec:
+  template:
+    metadata:
+      name: pod-petclinic-frontend
+      labels:
+        app: petclinic-microservice
+        service: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ${javaapp_docker_image_prefix}/spring-petclinic-api-gateway
+          ports:
+            - containerPort: 8080
+          command: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+
+
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-microservice
+      service: frontend
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  #type: NodePort
+  ports:
+    - name: "8080"
+      targetPort: 8080
+      port: 8080
+      #nodePort: 30761
+  selector:
+    app: petclinic-microservice
+    service: frontend
